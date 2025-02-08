@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_DB: cadastrousuarios
+      POSTGRES_USER: gabriel
+      POSTGRES_PASSWORD: 1508
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  springboot-app:
+    build: .
+    container_name: springboot_app
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/meu_banco
+      SPRING_DATASOURCE_USERNAME: gabriel
+      SPRING_DATASOURCE_PASSWORD: 1508
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
