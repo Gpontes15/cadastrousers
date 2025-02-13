@@ -1,13 +1,13 @@
-# Usa uma imagem do JDK para rodar o Spring Boot
+# Usar uma imagem do OpenJDK 21 para rodar a aplicação
 FROM openjdk:21-jdk-slim
 
-# Define o diretório de trabalho dentro do container
+# Definir diretório de trabalho dentro do container
 WORKDIR /app
 
-# Copia o arquivo JAR para dentro do container
+# Copiar o JAR gerado pelo Maven para dentro do container
 COPY target/*.jar app.jar
 
-# Expõe a porta da aplicação
+# Expor a porta que o Spring Boot usa
 EXPOSE 8080
 
 # Comando para rodar a aplicação

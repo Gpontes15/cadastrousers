@@ -3,9 +3,8 @@ package com.teste.teste.entity;
 import java.util.UUID;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,7 +15,6 @@ import jakarta.validation.constraints.Pattern;
 public class Users {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
 
     @NotBlank(message = "Username is mandatory")
@@ -29,7 +27,14 @@ public class Users {
     @NotBlank(message = "Email is mandatory")
     private String email;
 
-    // Getters and Setters
+    @PrePersist
+    public void generateUUID() {
+        if (this.userId == null) {
+            this.userId = UUID.randomUUID();
+        }
+    }
+
+    // Getters e Setters...
 
     public UUID getUserId() {
         return userId;

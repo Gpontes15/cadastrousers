@@ -2,6 +2,7 @@ package com.teste.teste.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teste.teste.entity.Users;
+import com.teste.teste.event.UserEvent;
 import com.teste.teste.repository.UsersRepository;
 import com.teste.teste.service.KafkaProducerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +27,21 @@ public class UsersController {
     private ObjectMapper objectMapper;
 
     @PostMapping
-    public ResponseEntity<Users> createUser(@Valid @RequestBody Users user) {
-        Users savedUser = usersRepository.save(user);
+    public ResponseEntity<String> createUser(@Valid @RequestBody Users user) {
+        user.setUserId(UUID.randomUUID()); // Gerar o ID antes de enviar pro Kafka
+        UserEvent event = new UserEvent(user.getUserId(), user.getUsername(), user.getCpf(), user.getEmail(), "CREATED");
+
         try {
-            String message = objectMapper.writeValueAsString(savedUser);
+            String message = objectMapper.writeValueAsString(event);
             kafkaProducerService.sendMessage(message);
+            return ResponseEntity.ok("User creation event sent to Kafka");
         } catch (Exception e) {
             e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed to send user creation event");
         }
-        return ResponseEntity.ok(savedUser);
     }
+
+
 
     @GetMapping
     public List<Users> getAllUsers() {
@@ -49,31 +55,31 @@ public class UsersController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Users> updateUser(@PathVariable UUID id, @Valid @RequestBody Users userDetails) {
-        Users user = usersRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        user.setUsername(userDetails.getUsername());
-        user.setCpf(userDetails.getCpf());
-        user.setEmail(userDetails.getEmail());
-        Users updatedUser = usersRepository.save(user);
+    public ResponseEntity<String> updateUser(@PathVariable UUID id, @Valid @RequestBody Users userDetails) {
+        UserEvent event = new UserEvent(id, userDetails.getUsername(), userDetails.getCpf(), userDetails.getEmail(), "UPDATED");
+    
         try {
-            String message = objectMapper.writeValueAsString(updatedUser);
+            String message = objectMapper.writeValueAsString(event);
             kafkaProducerService.sendMessage(message);
+            return ResponseEntity.ok("User update event sent to Kafka");
         } catch (Exception e) {
             e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed to send user update event");
         }
-        return ResponseEntity.ok(updatedUser);
     }
-
+    
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
-        Users user = usersRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        usersRepository.delete(user);
+    public ResponseEntity<String> deleteUser(@PathVariable UUID id) {
+        UserEvent event = new UserEvent(id, null, null, null, "DELETED");
+    
         try {
-            String message = objectMapper.writeValueAsString(user);
+            String message = objectMapper.writeValueAsString(event);
             kafkaProducerService.sendMessage(message);
+            return ResponseEntity.ok("User delete event sent to Kafka");
         } catch (Exception e) {
             e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Failed to send user delete event");
         }
-        return ResponseEntity.noContent().build();
     }
+    
 }

@@ -1,16 +1,14 @@
 #!/bin/bash
-export DOCKER_HOST=unix:///var/run/docker.sock  # Garante o uso do socket correto
+export DOCKER_HOST=unix:///home/gabriel/.docker/desktop/docker.sock
 
 echo "🚀 Iniciando o Docker e a aplicação..."
 
-# Garante que o Docker está rodando
 if ! systemctl is-active --quiet docker; then
     echo "🔧 Iniciando o Docker..."
     sudo systemctl start docker
 fi
 
-# Aguarde o Docker inicializar completamente
-TIMEOUT=60  # Aumente o tempo limite para 60 segundos
+TIMEOUT=60
 SECONDS=0
 while ! docker info >/dev/null 2>&1; do
     if [ $SECONDS -ge $TIMEOUT ]; then
@@ -23,20 +21,13 @@ done
 
 echo "🐳 Docker está rodando!"
 
-# Para garantir que não há containers rodando
-if [ "$(docker ps -q)" ]; then
-    docker stop $(docker ps -q)
-fi
+echo "🛠️  Compilando a aplicação Spring Boot..."
+./mvnw clean package -DskipTests || { echo "❌ Erro ao compilar a aplicação!"; exit 1; }
 
-if [ "$(docker ps -a -q)" ]; then
-    docker rm $(docker ps -a -q)
-fi
+echo "🛑 Parando e removendo todos os containers, redes e volumes..."
+docker compose down -v
 
-# Construir as imagens, se necessário
-docker compose build  
-
-# Subir os containers
+echo "🚀 Subindo os serviços com Docker Compose..."
 docker compose up -d
 
-# Iniciar a aplicação
-docker compose logs -f
+echo "🎉 Aplicação iniciada com sucesso!"

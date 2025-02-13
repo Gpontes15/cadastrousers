@@ -7,23 +7,31 @@ services:
       POSTGRES_DB: cadastrousuarios
       POSTGRES_USER: gabriel
       POSTGRES_PASSWORD: 1508
-    ports:
+    ports:  
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gabriel -d cadastrousuarios"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   springboot-app:
     build: .
     container_name: springboot_app
     restart: always
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cadastrousuarios
       SPRING_DATASOURCE_USERNAME: gabriel
       SPRING_DATASOURCE_PASSWORD: 1508
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8080:8080"
@@ -48,9 +56,13 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
 volumes:
   postgres_data:
+  kafka_data:
